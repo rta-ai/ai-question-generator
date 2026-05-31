@@ -8,7 +8,6 @@
 
 </div>
 
-<div align="center">
 🤖 AI Question Generator
 Generate high-quality quiz questions instantly using AI — powered by LLaMA 3.3 70B via Groq
     
