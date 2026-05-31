@@ -1,9 +1,10 @@
 <div align="center">
-# 🤖 AI Question Generator
- 
+#🤖 AI Question Generator
+</div> 
+<div align="center">
 **Generate high-quality quiz questions instantly using AI — powered by LLaMA 3.3 70B via Groq**
  
-[![Live Demo](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow?style=for-the-badge)](https://huggingface.co/spaces/rtaai/ai-question-generator)
+[![Live Demo](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow?style=for-the-badge)]((https://huggingface.co/spaces/RTAAI/ai-question-generator))
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Gradio](https://img.shields.io/badge/Gradio-6.14-orange?style=for-the-badge&logo=gradio&logoColor=white)](https://www.gradio.app/)
 [![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3%2070B-412991?style=for-the-badge)](https://groq.com/)
