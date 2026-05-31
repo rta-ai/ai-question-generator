@@ -59,7 +59,7 @@ ai-question-generator/
 
 🚀 Run Locally
 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/ai-question-generator.git
+git clone https://github.com/rta-ai/ai-question-generator.git
 cd ai-question-generator
 
 2. Install dependencies
@@ -85,7 +85,7 @@ Open your browser at http://localhost:7860
 Create a new Space at huggingface.co/new-space
 Set SDK to Gradio
 Push your code:
- git remote add space https://huggingface.co/spaces/YOUR_USERNAME/ai-question-generatorgit push space main
+ git remote add space https://huggingface.co/spaces/rta-ai/ai-question-generatorgit push space main
 
 
 Go to Settings → Variables and Secrets → add fb_ai as a secret with your Groq API key
@@ -108,9 +108,9 @@ Displayed in Gradio Textbox
 This project is licensed under the MIT License — see the LICENSE file for details.
 
 🙋‍♂️ Author
-Your Name
-GitHub: @YOUR_USERNAME
-Hugging Face: @YOUR_USERNAME
+Muhammd Tayyab
+GitHub: @rta-ai
+Hugging Face: @rtaai
  <div align="center">
 ⭐ If you found this useful, please star the repository! ⭐
 </div> 
