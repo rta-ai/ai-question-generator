@@ -1,4 +1,14 @@
 <div align="center">
+
+[![Live Demo](https://img.shields.io/badge/🤗%20Hugging%20Face-Live%20Demo-yellow?style=for-the-badge)](https://huggingface.co/spaces/rta-ai/ai-question-generator)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Gradio](https://img.shields.io/badge/Gradio-6.14-orange?style=for-the-badge)](https://www.gradio.app/)
+[![Groq](https://img.shields.io/badge/Groq-LLaMA%203.3%2070B-412991?style=for-the-badge)](https://groq.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+</div>
+
+<div align="center">
 🤖 AI Question Generator
 Generate high-quality quiz questions instantly using AI — powered by LLaMA 3.3 70B via Groq
     
@@ -85,7 +95,8 @@ Open your browser at http://localhost:7860
 Create a new Space at huggingface.co/new-space
 Set SDK to Gradio
 Push your code:
- git remote add space https://huggingface.co/spaces/rta-ai/ai-question-generatorgit push space main
+https://huggingface.co/spaces/rta-ai/ai-question-generator
+git push space main
 
 
 Go to Settings → Variables and Secrets → add fb_ai as a secret with your Groq API key
