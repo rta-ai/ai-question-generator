@@ -1,3 +1,14 @@
+---
+title: AI Question Generator
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "4.44.0"
+app_file: app.py
+pinned: false
+---
+
 # 🤖 AI Question Generator
 
 ### Generate high-quality quiz questions instantly using AI — powered by LLaMA 3.3 70B via Groq
