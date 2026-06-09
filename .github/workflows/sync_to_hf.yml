@@ -1,0 +1,22 @@
+name: Sync to HuggingFace
+
+"on":
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config user.email "ci@github.com"
+          git config user.name "GitHub Actions"
+          git remote add hf https://RTAAI:$HF_TOKEN@huggingface.co/spaces/RTAAI/ai-question-generator
+          git push hf main --force
