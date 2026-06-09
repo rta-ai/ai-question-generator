@@ -14,7 +14,7 @@ jobs:
 
       - name: Push to HuggingFace
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HFGIT_SYNCH }}
         run: |
           git config user.email "ci@github.com"
           git config user.name "GitHub Actions"
