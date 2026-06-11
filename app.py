@@ -341,6 +341,30 @@ footer {display: none !important;}
 .badge-pink   { background: #fff0fb; color: #f093fb; }
 .badge-red    { background: #fff0f2; color: #f5576c; }
 
+/* ── Answer Key Toggle ── */
+.answer-key-on {
+    background: #f0fff4;
+    border: 1px solid #38ef7d;
+    border-radius: 10px;
+    padding: 0.4rem 1rem;
+    color: #11998e;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+.answer-key-off {
+    background: #fff0f0;
+    border: 1px solid #f5576c;
+    border-radius: 10px;
+    padding: 0.4rem 1rem;
+    color: #f5576c;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: inline-block;
+}
+
 /* ── Print Button ── */
 .print-btn {
     background: linear-gradient(135deg, #11998e, #38ef7d) !important;
@@ -403,6 +427,8 @@ if "last_result" not in st.session_state:
     st.session_state.last_result = None
 if "last_topic" not in st.session_state:
     st.session_state.last_topic = ""
+if "show_answers" not in st.session_state:
+    st.session_state.show_answers = True
 
 # ─── Generator Function ──────────────────────────────────────
 def generate_questions(topic, num_questions, difficulty, question_type, subject, language, grade_level):
@@ -477,6 +503,20 @@ def export_pdf(content, topic):
     path = os.path.join(tempfile.gettempdir(), f"questions_{topic.replace(' ', '_')}.pdf")
     pdf.output(path)
     return path
+
+def strip_answers(content):
+    lines = content.split("\n")
+    cleaned = []
+    for line in lines:
+        if re.search(
+            r'(correct answer|answer key|model answer'
+            r'|answer:|true|false|✅|💡)',
+            line.strip(),
+            re.IGNORECASE
+        ):
+            continue
+        cleaned.append(line)
+    return "\n".join(cleaned)
 
 # ─── Sidebar ─────────────────────────────────────────────────
 with st.sidebar:
@@ -586,6 +626,7 @@ with tab1:
                         "count": num_questions,
                         "content": result
                     })
+                    st.session_state.show_answers = True
                     st.success("✅ Questions generated successfully!")
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
@@ -602,21 +643,51 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown(st.session_state.last_result)
+        col_toggle1, col_toggle2 = st.columns([1, 3])
+        with col_toggle1:
+            show_answers = st.toggle(
+                "Show Answer Key",
+                value=st.session_state.show_answers,
+                key="answer_toggle"
+            )
+            st.session_state.show_answers = show_answers
+        with col_toggle2:
+            if show_answers:
+                st.markdown(
+                    '<span class="answer-key-on">'
+                    '✅ Answer Key Visible — Teacher Mode'
+                    '</span>',
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    '<span class="answer-key-off">'
+                    '📝 Answers Hidden — Student Mode'
+                    '</span>',
+                    unsafe_allow_html=True
+                )
+
+        display_content = (
+            st.session_state.last_result
+            if show_answers
+            else strip_answers(st.session_state.last_result)
+        )
+
+        st.markdown(display_content)
 
         st.divider()
         col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
             st.download_button(
                 label="📥 Download TXT",
-                data=st.session_state.last_result,
+                data=display_content,
                 file_name=f"questions_{topic.replace(' ','_')}.txt",
                 mime="text/plain",
                 use_container_width=True
             )
         with col_dl2:
             pdf_path = export_pdf(
-                st.session_state.last_result,
+                display_content,
                 st.session_state.last_topic
             )
             with open(pdf_path, "rb") as f:
@@ -628,7 +699,7 @@ with tab1:
                     use_container_width=True
                 )
         with col_dl3:
-            _content_js = json.dumps(st.session_state.last_result)
+            _content_js = json.dumps(display_content)
             _topic_js = json.dumps(st.session_state.last_topic)
             components.html(f"""
 <style>
