@@ -404,6 +404,50 @@ footer {display: none !important;}
     transform: translateY(-2px) !important;
 }
 
+/* ── Paper Header ── */
+.paper-header {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    border-top: 5px solid #667eea;
+}
+.paper-header-top {
+    text-align: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+.paper-header-top h2 {
+    color: #2d1b69 !important;
+    font-size: 1.4rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+}
+.paper-header-top p {
+    color: #666 !important;
+    font-size: 0.9rem !important;
+    margin: 0.3rem 0 0 0 !important;
+}
+.paper-header-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #444;
+}
+.paper-header-meta span {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.paper-header-meta strong {
+    color: #2d1b69;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 /* ── Print Mode — hide everything except questions ── */
 @media print {
     [data-testid="stSidebar"],
@@ -448,6 +492,14 @@ if "last_topic" not in st.session_state:
     st.session_state.last_topic = ""
 if "show_answers" not in st.session_state:
     st.session_state.show_answers = True
+if "school_name" not in st.session_state:
+    st.session_state.school_name = ""
+if "exam_date" not in st.session_state:
+    st.session_state.exam_date = ""
+if "total_marks" not in st.session_state:
+    st.session_state.total_marks = ""
+if "class_name" not in st.session_state:
+    st.session_state.class_name = ""
 
 # ─── Generator Function ──────────────────────────────────────
 def generate_questions(topic, num_questions, difficulty, question_type, subject, language, grade_level):
@@ -505,10 +557,24 @@ def export_pdf(content, topic):
     pdf.add_page()
 
     # Header
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, clean(f"Questions: {topic}"), ln=True, align="C")
+    school = st.session_state.get("school_name", "")
+    cls = st.session_state.get("class_name", "")
+    date = st.session_state.get("exam_date", "")
+    marks = st.session_state.get("total_marks", "")
+
+    if school:
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 10, clean(school), ln=True, align="C")
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, clean(f"Subject: {topic}"), ln=True, align="C")
+    pdf.ln(2)
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(95, 7, clean(f"Class: {cls if cls else '______'}"), ln=False)
+    pdf.cell(0, 7, clean(f"Date: {date if date else '______'}"), ln=True)
+    pdf.cell(95, 7, clean(f"Total Marks: {marks if marks else '______'}"), ln=False)
+    pdf.cell(0, 7, "Time Allowed: ______", ln=True)
     pdf.set_line_width(0.5)
-    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
     pdf.ln(6)
 
     # Content
@@ -566,6 +632,40 @@ def copy_button(content):
     </button>
     """
 
+def render_paper_header(school, subject, grade, class_name, date, marks, topic):
+    if not any([school, class_name, date, marks]):
+        return ""
+    return f"""
+    <div class="paper-header">
+        <div class="paper-header-top">
+            <h2>{"🏫 " + school if school else "📝 Exam Paper"}</h2>
+            <p>{subject} — {topic}</p>
+        </div>
+        <div class="paper-header-meta">
+            <span>
+                <strong>Class / Section</strong>
+                {class_name if class_name else grade}
+            </span>
+            <span>
+                <strong>Difficulty</strong>
+                {grade}
+            </span>
+            <span>
+                <strong>Date</strong>
+                {date if date else "____________"}
+            </span>
+            <span>
+                <strong>Total Marks</strong>
+                {marks if marks else "____________"}
+            </span>
+            <span>
+                <strong>Time Allowed</strong>
+                ____________
+            </span>
+        </div>
+    </div>
+    """
+
 # ─── Sidebar ─────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
@@ -608,6 +708,38 @@ with st.sidebar:
     num_questions = st.slider("🔢 Questions", 1, 20, 5)
 
     generate_btn = st.button("✨ Generate Questions")
+
+    st.markdown("---")
+    st.markdown(
+        "<p style='color:rgba(255,255,255,0.7);"
+        "font-size:0.8rem;text-transform:uppercase;"
+        "letter-spacing:0.5px;margin-bottom:0.5rem'>"
+        "📋 Paper Header (Optional)</p>",
+        unsafe_allow_html=True
+    )
+    school_name = st.text_input(
+        "🏫 School / College / University Name",
+        placeholder="e.g. City Grammar School",
+        key="school_name"
+    )
+    class_name = st.text_input(
+        "🎒 Class / Section",
+        placeholder="e.g. Class 8 - A",
+        key="class_name"
+    )
+    col_date, col_marks = st.columns(2)
+    with col_date:
+        exam_date = st.text_input(
+            "📅 Date",
+            placeholder="e.g. 11/06/2026",
+            key="exam_date"
+        )
+    with col_marks:
+        total_marks = st.text_input(
+            "💯 Total Marks",
+            placeholder="e.g. 50",
+            key="total_marks"
+        )
 
     st.markdown("---")
     st.markdown(
@@ -691,6 +823,18 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
 
+        header_html = render_paper_header(
+            st.session_state.get("school_name", ""),
+            subject,
+            grade_level,
+            st.session_state.get("class_name", ""),
+            st.session_state.get("exam_date", ""),
+            st.session_state.get("total_marks", ""),
+            st.session_state.last_topic
+        )
+        if header_html:
+            st.markdown(header_html, unsafe_allow_html=True)
+
         col_toggle1, col_toggle2 = st.columns([1, 3])
         with col_toggle1:
             show_answers = st.toggle(
@@ -747,8 +891,14 @@ with tab1:
                     use_container_width=True
                 )
         with col_dl3:
-            _content_js = json.dumps(display_content)
-            _topic_js = json.dumps(st.session_state.last_topic)
+            _content_js  = json.dumps(display_content)
+            _topic_js    = json.dumps(st.session_state.last_topic)
+            _school_js   = json.dumps(st.session_state.get("school_name", ""))
+            _class_js    = json.dumps(st.session_state.get("class_name", ""))
+            _date_js     = json.dumps(st.session_state.get("exam_date", ""))
+            _marks_js    = json.dumps(st.session_state.get("total_marks", ""))
+            _subject_js  = json.dumps(subject)
+            _grade_js    = json.dumps(grade_level)
             components.html(f"""
 <style>
 * {{ margin: 0; padding: 0; box-sizing: border-box; }}
@@ -772,14 +922,35 @@ button:hover {{ opacity: 0.9; transform: translateY(-2px); }}
 <button onclick="doPrint()">🖨️ Print</button>
 <script>
 var content = {_content_js};
-var topic = {_topic_js};
+var topic   = {_topic_js};
+var school  = {_school_js};
+var cls     = {_class_js};
+var date    = {_date_js};
+var marks   = {_marks_js};
+var subject = {_subject_js};
+var grade   = {_grade_js};
 function doPrint() {{
+    var headerHtml = '';
+    if (school || cls || date || marks) {{
+        headerHtml = '<div style="border:1px solid #ddd;border-radius:10px;padding:1.2rem 1.5rem;margin-bottom:1.5rem;border-top:4px solid #667eea">'
+            + '<div style="text-align:center;border-bottom:1px solid #eee;padding-bottom:0.8rem;margin-bottom:0.8rem">'
+            + '<h2 style="color:#2d1b69;margin:0;font-size:1.3rem">' + (school ? '🏫 ' + school : '📝 Exam Paper') + '</h2>'
+            + '<p style="color:#666;margin:0.3rem 0 0 0;font-size:0.9rem">' + subject + ' — ' + topic + '</p>'
+            + '</div>'
+            + '<div style="display:flex;justify-content:space-between;font-size:0.85rem;color:#444">'
+            + '<span><strong style="display:block;color:#2d1b69;font-size:0.75rem;text-transform:uppercase">Class / Section</strong>' + (cls || grade) + '</span>'
+            + '<span><strong style="display:block;color:#2d1b69;font-size:0.75rem;text-transform:uppercase">Difficulty</strong>' + grade + '</span>'
+            + '<span><strong style="display:block;color:#2d1b69;font-size:0.75rem;text-transform:uppercase">Date</strong>' + (date || '____________') + '</span>'
+            + '<span><strong style="display:block;color:#2d1b69;font-size:0.75rem;text-transform:uppercase">Total Marks</strong>' + (marks || '____________') + '</span>'
+            + '<span><strong style="display:block;color:#2d1b69;font-size:0.75rem;text-transform:uppercase">Time Allowed</strong>____________</span>'
+            + '</div></div>';
+    }}
     var w = window.open('', '_blank');
     w.document.write('<!DOCTYPE html><html><head><title>' + topic + '</title>'
         + '<style>body{{font-family:Arial,sans-serif;padding:2rem;line-height:1.8;color:#1a1a1a}}'
-        + 'h2{{color:#2d1b69;margin-bottom:1rem}}pre{{white-space:pre-wrap;word-wrap:break-word}}'
+        + 'pre{{white-space:pre-wrap;word-wrap:break-word}}'
         + '</style></head><body>'
-        + '<h2>Questions: ' + topic + '</h2>'
+        + headerHtml
         + '<pre>' + content + '</pre>'
         + '</body></html>');
     w.document.close();
