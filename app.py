@@ -361,7 +361,7 @@ if "last_topic" not in st.session_state:
     st.session_state.last_topic = ""
 
 # ─── Generator Function ──────────────────────────────────────
-def generate_questions(topic, num_questions, difficulty, question_type, subject, language):
+def generate_questions(topic, num_questions, difficulty, question_type, subject, language, grade_level):
     if question_type == "MCQs":
         type_instructions = """
         - Each question must have exactly 4 options labeled A), B), C), D).
@@ -380,9 +380,10 @@ def generate_questions(topic, num_questions, difficulty, question_type, subject,
         """
 
     prompt = f"""
-    Generate {num_questions} high-quality {difficulty} level {question_type} 
+    Generate {num_questions} high-quality {difficulty} level {question_type}
     questions about "{topic}" in the subject of {subject}.
     Respond in {language}.
+    Adjust complexity and vocabulary for {grade_level} students.
     - Number questions properly (1., 2., 3.)
     - Be clear and educational
     - Avoid repetition
@@ -449,6 +450,15 @@ with st.sidebar:
         "General", "Science", "Mathematics",
         "History", "Programming", "Business",
         "Medicine", "Literature", "Geography"
+    ])
+
+    grade_level = st.selectbox("🎒 Grade Level", [
+        "Grade 1-5 (Primary)",
+        "Grade 6-8 (Middle School)",
+        "Grade 9-10 (High School)",
+        "Grade 11-12 (A Level / FSc)",
+        "University",
+        "Professional"
     ])
 
     language = st.selectbox("🌍 Language", [
@@ -518,7 +528,7 @@ with tab1:
                 try:
                     result = generate_questions(
                         topic, num_questions, difficulty,
-                        question_type, subject, language
+                        question_type, subject, language, grade_level
                     )
                     st.session_state.last_result = result
                     st.session_state.last_topic = topic
@@ -528,6 +538,7 @@ with tab1:
                         "type": question_type,
                         "difficulty": difficulty,
                         "subject": subject,
+                        "grade": grade_level,
                         "count": num_questions,
                         "content": result
                     })
@@ -603,9 +614,10 @@ with tab2:
 
         for i, item in enumerate(reversed(st.session_state.history)):
             with st.expander(
-                f"📄 {item['topic']}  |  "
-                f"{item['type']}  |  "
-                f"{item['difficulty']}  |  "
+                f"📄 {item['topic']} | "
+                f"{item['type']} | "
+                f"{item['difficulty']} | "
+                f"{item.get('grade', 'N/A')} | "
                 f"{item['count']} questions"
             ):
                 st.markdown(item["content"])
