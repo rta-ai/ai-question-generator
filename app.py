@@ -2,8 +2,11 @@ import os
 import re
 import streamlit as st
 from groq import Groq
-from dotenv import load_dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 # ─── Page Config ────────────────────────────────────────────
 st.set_page_config(
