@@ -365,6 +365,25 @@ footer {display: none !important;}
     display: inline-block;
 }
 
+/* ── Copy Button ── */
+.copy-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 0.6rem 2rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4) !important;
+    transition: all 0.3s ease !important;
+}
+.copy-btn:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-2px) !important;
+}
+
 /* ── Print Button ── */
 .print-btn {
     background: linear-gradient(135deg, #11998e, #38ef7d) !important;
@@ -518,13 +537,42 @@ def strip_answers(content):
         cleaned.append(line)
     return "\n".join(cleaned)
 
+def copy_button(content):
+    escaped = content.replace("\\", "\\\\") \
+                     .replace("`", "\\`") \
+                     .replace("$", "\\$")
+    return f"""
+    <button class="copy-btn"
+        onclick="
+            navigator.clipboard.writeText(`{escaped}`)
+            .then(() => {{
+                this.innerHTML = '✅ Copied!';
+                this.style.background =
+                    'linear-gradient(135deg,#11998e,#38ef7d)';
+                setTimeout(() => {{
+                    this.innerHTML = '📋 Copy to Clipboard';
+                    this.style.background =
+                        'linear-gradient(135deg,#667eea,#764ba2)';
+                }}, 2000);
+            }})
+            .catch(() => {{
+                this.innerHTML = '❌ Failed to copy';
+                setTimeout(() => {{
+                    this.innerHTML = '📋 Copy to Clipboard';
+                }}, 2000);
+            }});
+        ">
+        📋 Copy to Clipboard
+    </button>
+    """
+
 # ─── Sidebar ─────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("""
     <div class="sidebar-logo">
         <div style="font-size:3rem">🎓</div>
         <h2>Question Generator</h2>
-        <p>Powered by Groq AI</p>
+        <p>Powered by AI</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -564,7 +612,7 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         "<p style='text-align:center; color:rgba(255,255,255,0.5);"
-        "font-size:0.75rem'>Built with ❤️ Muhammad Tayyab</p>",
+        "font-size:0.75rem'>Built by ❤️ Muhammad Tayyab</p>",
         unsafe_allow_html=True
     )
 
@@ -676,7 +724,7 @@ with tab1:
         st.markdown(display_content)
 
         st.divider()
-        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        col_dl1, col_dl2, col_dl3, col_dl4 = st.columns(4)
         with col_dl1:
             st.download_button(
                 label="📥 Download TXT",
@@ -703,6 +751,8 @@ with tab1:
             _topic_js = json.dumps(st.session_state.last_topic)
             components.html(f"""
 <style>
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+body {{ margin-top: 6px; }}
 button {{
     background: linear-gradient(135deg, #11998e, #38ef7d);
     color: white;
@@ -735,6 +785,51 @@ function doPrint() {{
     w.document.close();
     w.focus();
     w.print();
+}}
+</script>
+""", height=55)
+        with col_dl4:
+            _copy_js = json.dumps(display_content)
+            components.html(f"""
+<style>
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+body {{ margin-top: 6px; }}
+button {{
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.6rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4);
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}}
+button:hover {{ opacity: 0.9; transform: translateY(-2px); }}
+</style>
+<button id="copyBtn" onclick="doCopy()">📋 Copy to Clipboard</button>
+<script>
+var text = {_copy_js};
+function doCopy() {{
+    var btn = document.getElementById('copyBtn');
+    navigator.clipboard.writeText(text)
+        .then(function() {{
+            btn.innerHTML = '✅ Copied!';
+            btn.style.background = 'linear-gradient(135deg,#11998e,#38ef7d)';
+            setTimeout(function() {{
+                btn.innerHTML = '📋 Copy to Clipboard';
+                btn.style.background = 'linear-gradient(135deg,#667eea,#764ba2)';
+            }}, 2000);
+        }})
+        .catch(function() {{
+            btn.innerHTML = '❌ Failed to copy';
+            setTimeout(function() {{
+                btn.innerHTML = '📋 Copy to Clipboard';
+            }}, 2000);
+        }});
 }}
 </script>
 """, height=55)
