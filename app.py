@@ -1,6 +1,8 @@
 import os
 import re
+import json
 import tempfile
+import streamlit.components.v1 as components
 import streamlit as st
 from groq import Groq
 from fpdf import FPDF
@@ -339,6 +341,48 @@ footer {display: none !important;}
 .badge-pink   { background: #fff0fb; color: #f093fb; }
 .badge-red    { background: #fff0f2; color: #f5576c; }
 
+/* ── Print Button ── */
+.print-btn {
+    background: linear-gradient(135deg, #11998e, #38ef7d) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 0.6rem 2rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    cursor: pointer !important;
+    box-shadow: 0 4px 15px rgba(17,153,142,0.4) !important;
+    margin-top: 0.5rem !important;
+    transition: all 0.3s ease !important;
+}
+.print-btn:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-2px) !important;
+}
+
+/* ── Print Mode — hide everything except questions ── */
+@media print {
+    [data-testid="stSidebar"],
+    [data-testid="stToolbar"],
+    [data-testid="stDownloadButton"],
+    .hero,
+    .stats-row,
+    .stTabs,
+    .stButton,
+    .print-btn,
+    footer,
+    #MainMenu { display: none !important; }
+
+    .output-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    body { background: white !important; }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -561,7 +605,7 @@ with tab1:
         st.markdown(st.session_state.last_result)
 
         st.divider()
-        col_dl1, col_dl2 = st.columns(2)
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
             st.download_button(
                 label="📥 Download TXT",
@@ -583,6 +627,46 @@ with tab1:
                     mime="application/pdf",
                     use_container_width=True
                 )
+        with col_dl3:
+            _content_js = json.dumps(st.session_state.last_result)
+            _topic_js = json.dumps(st.session_state.last_topic)
+            components.html(f"""
+<style>
+button {{
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.6rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    width: 100%;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(17,153,142,0.4);
+    transition: all 0.3s ease;
+    font-family: 'Poppins', sans-serif;
+}}
+button:hover {{ opacity: 0.9; transform: translateY(-2px); }}
+</style>
+<button onclick="doPrint()">🖨️ Print</button>
+<script>
+var content = {_content_js};
+var topic = {_topic_js};
+function doPrint() {{
+    var w = window.open('', '_blank');
+    w.document.write('<!DOCTYPE html><html><head><title>' + topic + '</title>'
+        + '<style>body{{font-family:Arial,sans-serif;padding:2rem;line-height:1.8;color:#1a1a1a}}'
+        + 'h2{{color:#2d1b69;margin-bottom:1rem}}pre{{white-space:pre-wrap;word-wrap:break-word}}'
+        + '</style></head><body>'
+        + '<h2>Questions: ' + topic + '</h2>'
+        + '<pre>' + content + '</pre>'
+        + '</body></html>');
+    w.document.close();
+    w.focus();
+    w.print();
+}}
+</script>
+""", height=55)
     else:
         st.markdown("""
         <div class="empty-state">
