@@ -1,7 +1,9 @@
 import os
 import re
+import tempfile
 import streamlit as st
 from groq import Groq
+from fpdf import FPDF
 try:
     from dotenv import load_dotenv
     load_dotenv()
@@ -308,6 +310,21 @@ footer {display: none !important;}
     transition: all 0.2s ease !important;
 }
 
+[data-testid="stDownloadButton"] button {
+    background: linear-gradient(135deg, #667eea, #11998e) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50px !important;
+    padding: 0.6rem 2rem !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    box-shadow: 0 4px 15px rgba(102,126,234,0.4) !important;
+}
+[data-testid="stDownloadButton"] button:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-2px) !important;
+}
+
 /* ── Badge ── */
 .badge {
     display: inline-block;
@@ -382,6 +399,39 @@ def generate_questions(topic, num_questions, difficulty, question_type, subject,
     )
     return re.sub(r'\n{3,}', '\n\n',
                   response.choices[0].message.content.strip())
+
+def export_pdf(content, topic):
+    import re
+
+    def clean(text):
+        # Remove emojis and non-latin characters
+        return re.sub(
+            r'[^\x00-\x7F\u00C0-\u024F]+', 
+            '', 
+            text
+        ).strip()
+
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Header
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, clean(f"Questions: {topic}"), ln=True, align="C")
+    pdf.set_line_width(0.5)
+    pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+    pdf.ln(6)
+
+    # Content
+    pdf.set_font("Helvetica", "", 11)
+    for line in content.split("\n"):
+        cleaned = clean(line)
+        if cleaned:
+            pdf.multi_cell(0, 8, cleaned)
+            pdf.ln(1)
+
+    path = os.path.join(tempfile.gettempdir(), f"questions_{topic.replace(' ', '_')}.pdf")
+    pdf.output(path)
+    return path
 
 # ─── Sidebar ─────────────────────────────────────────────────
 with st.sidebar:
@@ -500,13 +550,28 @@ with tab1:
         st.markdown(st.session_state.last_result)
 
         st.divider()
-        st.download_button(
-            label="📥 Download as TXT",
-            data=st.session_state.last_result,
-            file_name=f"questions_{topic.replace(' ', '_')}.txt",
-            mime="text/plain",
-            use_container_width=True
-        )
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            st.download_button(
+                label="📥 Download TXT",
+                data=st.session_state.last_result,
+                file_name=f"questions_{topic.replace(' ','_')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        with col_dl2:
+            pdf_path = export_pdf(
+                st.session_state.last_result,
+                st.session_state.last_topic
+            )
+            with open(pdf_path, "rb") as f:
+                st.download_button(
+                    label="📄 Download PDF",
+                    data=f,
+                    file_name=f"questions_{st.session_state.last_topic.replace(' ','_')}.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
     else:
         st.markdown("""
         <div class="empty-state">
