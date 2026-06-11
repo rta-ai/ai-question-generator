@@ -2,93 +2,549 @@ import os
 import re
 import streamlit as st
 from groq import Groq
+from dotenv import load_dotenv
+load_dotenv()
 
+# ─── Page Config ────────────────────────────────────────────
+st.set_page_config(
+    page_title="AI Question Generator",
+    page_icon="🎓",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# ─── Full Custom CSS ─────────────────────────────────────────
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+/* ── Global ── */
+*, body, [class*="css"] {
+    font-family: 'Poppins', sans-serif;
+}
+
+.stApp {
+    background: linear-gradient(135deg, #f5f0ff 0%, #fff0f5 50%, #f0f8ff 100%);
+}
+
+/* ── Hide Streamlit Branding ── */
+#MainMenu {display: none !important;}
+footer {display: none !important;}
+[data-testid="stToolbar"] {display: none !important;}
+
+/* ── Hero Header ── */
+.hero {
+    background: linear-gradient(135deg, #667eea 0%, #f093fb 50%, #f5576c 100%);
+    padding: 2.5rem 2rem;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 20px 60px rgba(102, 126, 234, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.hero h1 {
+    color: white !important;
+    font-size: 2.8rem !important;
+    font-weight: 700 !important;
+    margin: 0 !important;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    letter-spacing: -0.5px;
+}
+
+.hero p {
+    color: rgba(255,255,255,0.9) !important;
+    font-size: 1.1rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    font-weight: 400;
+}
+
+/* ── Sidebar ── */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #2d1b69 0%, #11998e 100%) !important;
+    border-right: none !important;
+}
+
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] div:not([data-testid="collapsedControl"]) > p {
+    color: white !important;
+}
+
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stSlider label,
+[data-testid="stSidebar"] .stTextInput label {
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 500 !important;
+    font-size: 0.85rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+
+[data-testid="stSidebar"] .stTextInput input,
+[data-testid="stSidebar"] .stSelectbox select {
+    background: rgba(255,255,255,0.15) !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    border-radius: 10px !important;
+    color: white !important;
+}
+
+/* ── Sidebar Logo Area ── */
+.sidebar-logo {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-logo h2 {
+    color: white !important;
+    font-size: 1.3rem !important;
+    font-weight: 600 !important;
+    margin: 0.5rem 0 0 0;
+}
+
+.sidebar-logo p {
+    color: rgba(255,255,255,0.7) !important;
+    font-size: 0.8rem !important;
+    margin: 0;
+}
+
+/* ── Generate Button ── */
+.stButton > button {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 0.8rem 2rem !important;
+    border-radius: 50px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    width: 100% !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 8px 25px rgba(245, 87, 108, 0.4) !important;
+    transition: all 0.3s ease !important;
+    margin-top: 1rem !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 12px 35px rgba(245, 87, 108, 0.5) !important;
+}
+
+/* ── Stats Cards ── */
+.stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    flex: 1;
+    background: white;
+    border-radius: 16px;
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    border-top: 4px solid;
+}
+
+.stat-card.purple { border-color: #667eea; }
+.stat-card.pink   { border-color: #f093fb; }
+.stat-card.red    { border-color: #f5576c; }
+.stat-card.teal   { border-color: #11998e; }
+
+.stat-card .stat-number {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #2d1b69;
+}
+
+.stat-card .stat-label {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.2rem;
+}
+
+/* ── Output Card ── */
+.output-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+    border-left: 5px solid #667eea;
+    margin-top: 1rem;
+    line-height: 1.8;
+    color: #1a1a1a !important;
+}
+
+/* ── Generated Questions Text ── */
+.stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown ol, .stMarkdown ul,
+[data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li {
+    color: #1a1a1a !important;
+}
+
+.output-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px dashed #f0f0f0;
+}
+
+.output-header h3 {
+    color: #2d1b69;
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+/* ── Tab Styling ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: white;
+    border-radius: 50px;
+    padding: 0.3rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    gap: 0.2rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    border-radius: 50px !important;
+    padding: 0.5rem 1.5rem !important;
+    font-weight: 500 !important;
+    color: #666 !important;
+}
+
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, #667eea, #f5576c) !important;
+    color: white !important;
+}
+
+/* ── History Cards ── */
+.history-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    border-left: 4px solid #667eea;
+}
+
+/* ── Empty State ── */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #aaa;
+}
+
+.empty-state .icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    color: #bbb;
+    font-weight: 500;
+}
+
+/* ── Sidebar Toggle — Fully Visible ── */
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 999999 !important;
+    background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%) !important;
+    border-radius: 0 16px 16px 0 !important;
+    width: 28px !important;
+    height: 64px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-shadow: 4px 0 20px rgba(45,27,105,0.5) !important;
+    cursor: pointer !important;
+    border: none !important;
+}
+
+[data-testid="collapsedControl"] svg {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    fill: white !important;
+    color: white !important;
+    width: 16px !important;
+    height: 16px !important;
+    stroke: white !important;
+}
+
+[data-testid="collapsedControl"]:hover {
+    width: 34px !important;
+    box-shadow: 6px 0 25px rgba(45,27,105,0.7) !important;
+    transition: all 0.2s ease !important;
+}
+
+/* ── Badge ── */
+.badge {
+    display: inline-block;
+    padding: 0.2rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.3rem;
+}
+
+.badge-purple { background: #f0eeff; color: #667eea; }
+.badge-pink   { background: #fff0fb; color: #f093fb; }
+.badge-red    { background: #fff0f2; color: #f5576c; }
+
+</style>
+""", unsafe_allow_html=True)
+
+# ─── API Setup ───────────────────────────────────────────────
 GROQ_API_KEY = os.environ.get("fb_ai")
-
 if not GROQ_API_KEY:
-    st.error("Groq API Key not found. Please add it as a Space Secret named 'fb_ai'.")
+    st.error("⚠️ Groq API Key not found. Add it as Space Secret named 'fb_ai'.")
     st.stop()
 
 client = Groq(api_key=GROQ_API_KEY)
 
-st.markdown("""
-<style>
-.header {
-    background: linear-gradient(90deg, #1a1a2e, #16213e);
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-.header h1 { color: #e0e0ff; margin: 0; font-size: 2rem; }
-.header p  { color: #a0a0cc; margin: 0.4rem 0 0; font-size: 1rem; }
-</style>
-<div class="header">
-  <h1>🤖 AI Question Generator</h1>
-  <p>Enter any topic and generate AI-based questions instantly.</p>
-</div>
-""", unsafe_allow_html=True)
+# ─── Session State ───────────────────────────────────────────
+if "history" not in st.session_state:
+    st.session_state.history = []
+if "total_generated" not in st.session_state:
+    st.session_state.total_generated = 0
+if "last_result" not in st.session_state:
+    st.session_state.last_result = None
+if "last_topic" not in st.session_state:
+    st.session_state.last_topic = ""
 
-with st.sidebar:
-    st.header("Settings")
-    topic = st.text_input("Enter Topic", placeholder="Example: Artificial Intelligence")
-    num_questions = st.slider("Number of Questions", min_value=1, max_value=20, value=5, step=1)
-    difficulty = st.selectbox("Difficulty Level", ["Easy", "Medium", "Hard"], index=1)
-    question_type = st.selectbox("Question Type", ["MCQs", "True/False", "Short Descriptive"])
-    generate_btn = st.button("Generate Questions", use_container_width=True)
-
-def generate_questions(topic, num_questions, difficulty, question_type):
+# ─── Generator Function ──────────────────────────────────────
+def generate_questions(topic, num_questions, difficulty, question_type, subject, language):
     if question_type == "MCQs":
         type_instructions = """
-    - Each question must have exactly 4 options labeled A), B), C), D).
-    - Clearly mark the correct answer at the end of each question like: ✅ Correct Answer: B)
-    - Make sure distractors (wrong options) are plausible but clearly incorrect.
+        - Each question must have exactly 4 options labeled A), B), C), D).
+        - Clearly mark the correct answer like: ✅ Correct Answer: B)
+        - Make distractors plausible but clearly incorrect.
         """
     elif question_type == "True/False":
         type_instructions = """
-    - Each question must be a statement that is either True or False.
-    - Clearly mark the correct answer at the end of each question like: ✅ Answer: True / False
-    - Statements should be unambiguous and factual.
-        """
-    elif question_type == "Short Descriptive":
-        type_instructions = """
-    - Each question should require a short written answer (2-5 sentences).
-    - Questions should be open-ended and thought-provoking.
-    - Provide a brief model answer after each question like: 💡 Model Answer: ...
+        - Each question must be a clear True or False statement.
+        - Mark the answer like: ✅ Answer: True / False
         """
     else:
-        type_instructions = ""
+        type_instructions = """
+        - Each question should require a 2-5 sentence answer.
+        - Provide a model answer like: 💡 Model Answer: ...
+        """
 
     prompt = f"""
-    Generate {num_questions} high-quality {difficulty} level {question_type} questions about the topic: "{topic}".
-
-    Instructions:
-    - Questions should be clear and educational.
-    - Number them properly (1., 2., 3. ...).
-    - Avoid repeating questions.
-    - Cover important aspects of the topic.
+    Generate {num_questions} high-quality {difficulty} level {question_type} 
+    questions about "{topic}" in the subject of {subject}.
+    Respond in {language}.
+    - Number questions properly (1., 2., 3.)
+    - Be clear and educational
+    - Avoid repetition
     {type_instructions}
     """
 
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
-            {"role": "system", "content": "You are an expert teacher and question paper setter."},
+            {"role": "system", "content": "You are an expert teacher and exam paper setter."},
             {"role": "user", "content": prompt}
         ],
         temperature=0.7
     )
+    return re.sub(r'\n{3,}', '\n\n',
+                  response.choices[0].message.content.strip())
 
-    output = response.choices[0].message.content.strip()
-    return re.sub(r'\n{3,}', '\n\n', output)
+# ─── Sidebar ─────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+    <div class="sidebar-logo">
+        <div style="font-size:3rem">🎓</div>
+        <h2>Question Generator</h2>
+        <p>Powered by Groq AI</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-if generate_btn:
-    if not topic.strip():
-        st.warning("Please enter a topic.")
+    topic = st.text_input("📚 Topic", placeholder="e.g. Photosynthesis")
+
+    subject = st.selectbox("🎯 Subject", [
+        "General", "Science", "Mathematics",
+        "History", "Programming", "Business",
+        "Medicine", "Literature", "Geography"
+    ])
+
+    language = st.selectbox("🌍 Language", [
+        "English", "Urdu", "Arabic", "French", "Spanish"
+    ])
+
+    col1, col2 = st.columns(2)
+    with col1:
+        difficulty = st.selectbox("📊 Level", ["Easy", "Medium", "Hard"])
+    with col2:
+        question_type = st.selectbox("📝 Type", [
+            "MCQs", "True/False", "Short Descriptive"
+        ])
+
+    num_questions = st.slider("🔢 Questions", 1, 20, 5)
+
+    generate_btn = st.button("✨ Generate Questions")
+
+    st.markdown("---")
+    st.markdown(
+        "<p style='text-align:center; color:rgba(255,255,255,0.5);"
+        "font-size:0.75rem'>Built with ❤️ Muhammad Tayyab</p>",
+        unsafe_allow_html=True
+    )
+
+# ─── Main Panel ──────────────────────────────────────────────
+st.markdown("""
+<div class="hero">
+    <h1>🎓 AI Question Generator</h1>
+    <p>Create professional exam questions for your classroom in seconds</p>
+</div>
+""", unsafe_allow_html=True)
+
+# Stats Row
+total = st.session_state.total_generated
+sessions = len(st.session_state.history)
+st.markdown(f"""
+<div class="stats-row">
+    <div class="stat-card purple">
+        <div class="stat-number">{total}</div>
+        <div class="stat-label">Questions Generated</div>
+    </div>
+    <div class="stat-card pink">
+        <div class="stat-number">{sessions}</div>
+        <div class="stat-label">Sessions</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-number">5</div>
+        <div class="stat-label">Question Types</div>
+    </div>
+    <div class="stat-card teal">
+        <div class="stat-number">3</div>
+        <div class="stat-label">Difficulty Levels</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Tabs
+tab1, tab2 = st.tabs(["✨  Generate", "📋  History"])
+
+with tab1:
+    if generate_btn:
+        if not topic.strip():
+            st.warning("⚠️ Please enter a topic in the sidebar first.")
+        else:
+            with st.spinner("🤖 Generating your questions..."):
+                try:
+                    result = generate_questions(
+                        topic, num_questions, difficulty,
+                        question_type, subject, language
+                    )
+                    st.session_state.last_result = result
+                    st.session_state.last_topic = topic
+                    st.session_state.total_generated += num_questions
+                    st.session_state.history.append({
+                        "topic": topic,
+                        "type": question_type,
+                        "difficulty": difficulty,
+                        "subject": subject,
+                        "count": num_questions,
+                        "content": result
+                    })
+                    st.success("✅ Questions generated successfully!")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+
+    if st.session_state.last_result:
+        st.markdown(f"""
+        <div class="output-card">
+            <div class="output-header">
+                <span>📄</span>
+                <h3>{st.session_state.last_topic}</h3>
+                <span class="badge badge-purple">{difficulty}</span>
+                <span class="badge badge-pink">{question_type}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(st.session_state.last_result)
+
+        st.divider()
+        st.download_button(
+            label="📥 Download as TXT",
+            data=st.session_state.last_result,
+            file_name=f"questions_{topic.replace(' ', '_')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
     else:
-        with st.spinner("Generating questions..."):
-            try:
-                result = generate_questions(topic, num_questions, difficulty, question_type)
-                st.text_area("Generated Questions", value=result, height=500)
-            except Exception as e:
-                st.error(f"Error: {str(e)}")
+        st.markdown("""
+        <div class="empty-state">
+            <div class="icon">📝</div>
+            <h3>No questions yet</h3>
+            <p>Fill in the settings on the left and hit Generate</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+with tab2:
+    if not st.session_state.history:
+        st.markdown("""
+        <div class="empty-state">
+            <div class="icon">📋</div>
+            <h3>No history yet</h3>
+            <p>Your generated question sets will appear here</p>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(
+                f"**{len(st.session_state.history)} session(s)** in history"
+            )
+        with col2:
+            if st.button("🗑️ Clear All"):
+                st.session_state.history = []
+                st.rerun()
+
+        for i, item in enumerate(reversed(st.session_state.history)):
+            with st.expander(
+                f"📄 {item['topic']}  |  "
+                f"{item['type']}  |  "
+                f"{item['difficulty']}  |  "
+                f"{item['count']} questions"
+            ):
+                st.markdown(item["content"])
+                st.download_button(
+                    label="📥 Download",
+                    data=item["content"],
+                    file_name=f"questions_{item['topic'].replace(' ','_')}.txt",
+                    mime="text/plain",
+                    key=f"dl_{i}"
+                )
